@@ -1,6 +1,7 @@
 import time
 import os
 from tqdm import tqdm
+import shutil
 
 Black = "\033[30m"
 Red = "\033[31m"
@@ -83,7 +84,6 @@ def label(srcdir, datadir):
     print("Initializing pygame...")
     timer = Timer()
     import pygame
-    import shutil
     pygame.init()
     screen = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("LMB: Red | RMB: Blue | ENTR: Submit | C: Clear | ESC: Reject")
@@ -109,10 +109,9 @@ def label(srcdir, datadir):
     if not os.path.isfile(os.path.join(datadir, "dataset.yaml")):
         print("No dataset config found, implicitly creating one now...")
         with open(os.path.join(datadir, "dataset.yaml"), 'w') as file:
-            imgpath = os.path.join(os.path.join(datadir, "images"), "train")
-            valpath = os.path.join(os.path.join(datadir, "images"), "val")
+            imgpath = os.path.abspath(os.path.join(os.path.join(datadir, "images"), "train"))
+            valpath = os.path.abspath(os.path.join(os.path.join(datadir, "images"), "val"))
             file.write(
-                "path: .\n" + 
                 f"train: {imgpath}\n" + 
                 f"val: {valpath}\n" + 
                 "\n" + 
@@ -120,18 +119,18 @@ def label(srcdir, datadir):
                 "names: ['Red', 'Blue']"
             )
 
-    while True:
-        if (current_image_index >= len(images)):
-            print("No more images to label! Shutting down now!")
-            pygame.quit()
-            return
-        
+    while True:        
         if os.path.isfile(os.path.join(srcdir, ".jignore")):
             with open(os.path.join(srcdir, ".jignore"), 'r') as file:
                 for line in file.readlines():
                     if image_names[current_image_index] == line.strip():
                         current_image_index += 1
                         continue
+        
+        if (current_image_index >= len(images)):
+            print("No more images to label! Shutting down now!")
+            pygame.quit()
+            return
 
         img = pygame.image.load(images[current_image_index])
         img_rect = img.get_rect(center=(400, 300))
@@ -183,18 +182,19 @@ def label(srcdir, datadir):
                     os.makedirs(os.path.join(datadir, "images/train"), exist_ok=True)
                     os.makedirs(os.path.join(datadir, "images/val"), exist_ok=True)
                     split_count += 1
+                    txtname = image_names[current_image_index][0:len(image_names[current_image_index]) - len(image_names[current_image_index].split(".")[-1])] + "txt"
                     if split_count < 9:
-                        with open(os.path.join(datadir, "labels/train/" + image_names[current_image_index].split(".")[0] + ".txt"), 'w') as f:
+                        with open(os.path.join(datadir, "labels/train/" + txtname), 'w') as f:
                             for box in selected_boxes:
-                                x_center = (box['rect'].x + box['rect'].width / 2) / img.get_width()
-                                y_center = (box['rect'].y + box['rect'].height / 2) / img.get_height()
+                                x_center = ((box['rect'].x + box['rect'].width / 2) - (400 - (img.get_width()/2))) / img.get_width()
+                                y_center = ((box['rect'].y + box['rect'].height / 2) - (300 - (img.get_height()/2))) / img.get_height()
                                 width = box['rect'].width / img.get_width()
                                 height = box['rect'].height / img.get_height()
                                 label = box['label']
                                 f.write(f"{class_labels[label]} {x_center} {y_center} {width} {height}\n")
                         shutil.copy(images[current_image_index], os.path.join(datadir, "images/train/" + image_names[current_image_index]))
                     else:
-                        with open(os.path.join(datadir, "labels/val/" + image_names[current_image_index].split(".")[0] + ".txt"), 'w') as f:
+                        with open(os.path.join(datadir, "labels/val/" + txtname), 'w') as f:
                             for box in selected_boxes:
                                 x_center = (box['rect'].x + box['rect'].width / 2) / img.get_width()
                                 y_center = (box['rect'].y + box['rect'].height / 2) / img.get_height()
@@ -223,3 +223,19 @@ def label(srcdir, datadir):
                     rect = pygame.Rect(start_pos, (end_pos[0] - start_pos[0], end_pos[1] - start_pos[1]))
                     selected_boxes.append({'rect': rect, 'label': 'Blue'})
                     selecting = False
+
+def trainmodel(name, datayaml, mpset, nepochs, nbatch):
+    print("Initializing ultralytics...")
+    timer = Timer()
+    from ultralytics import YOLO
+    print(f"Finished in {Green}{timer.end()}{Reset} seconds")
+    print("Initializing preset...")
+    timer.end()
+    model = YOLO(mpset)
+    print(f"Finished initializing preset in {Green}{timer.end()}{Reset} seconds")
+    print("Starting training process...")
+    timer.end()
+    result = model.train(data=datayaml, epochs=nepochs, batch=nbatch)
+    shutil.copy(os.path.join(os.path.join(result.save_dir, "weights"), "best.pt"), f"models/{name}.pt")
+    print(f"Finished training process in {Green}{timer.end()}{Reset} seconds")
+    print(f"Final model saved under \"{Green}models/{name}.pt{Reset}\"")

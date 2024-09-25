@@ -1,3 +1,5 @@
 .clirc
 .temp
 *__pycache__
+runs/
+yolov*.pt

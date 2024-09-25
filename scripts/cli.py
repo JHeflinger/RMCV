@@ -1,8 +1,9 @@
 import os
-from lib import benchmark, Black, Red, Green, Yellow, Blue, Magenta, Cyan, White, Reset
+from lib import benchmark, label, Black, Red, Green, Yellow, Blue, Magenta, Cyan, White, Reset
 
 prettylogger = True
 state = 0
+gdir = ""
 
 def pprint(mystr):
     global prettylogger
@@ -11,6 +12,7 @@ def pprint(mystr):
 
 def run_command(cmd):
     global state
+    global gdir
     if cmd == "quit":
         return False
     if cmd == "help":
@@ -18,6 +20,7 @@ def run_command(cmd):
         print(f"\thelp       | The command that 😍{Red}YOU{Reset}💖 are running right now silly!")
         print(f"\tbenchmark  | {Green}Tests{Reset} one or more models thouroughly to compare speed and accuracy! 👌")
         print(f"\tdemo       | Shows off our {Yellow}AWESOME{Reset} performance! 💪🥸")
+        print(f"\tlabel      | Labels your {Magenta}🪨ROCKIN'🪨{Reset} data!")
         print(f"\ttrain      | Trains a new {Yellow}⭐STELLAR⭐{Reset} model")
         return True
     if state == 0:
@@ -33,17 +36,17 @@ def run_command(cmd):
             state = 1
             return True
         if cmd == "demo":
-            print("not implemented yet buster")
+            print("not implemented yet buster...")
             exit()
             state = 2
             return True
         if cmd == "label":
-            print("not implemented yet buster")
-            exit()
+            pprint(f"WHOS READY FOR SOME (boring) {Yellow}💪💪LABELING???💪💪{Reset}")
+            pprint(f"What {Red}R{Yellow}A{Green}D{Cyan}I{Blue}C{Magenta}A{Red}L{Reset} directory are you labeling from?")
             state = 3
             return True
         if cmd == "train":
-            print("not implemented yet buster")
+            print("not implemented yet buster...")
             exit()
             state = 4
             return True
@@ -70,6 +73,22 @@ def run_command(cmd):
             benchmark(testing)
             state = 0
             return True
+    if state == 3:
+        if os.path.isdir(cmd):
+            gdir = cmd
+            state = 5
+            pprint(f"{Yellow}⭐STELLAR⭐{Reset}!! Where do you want your labeled data to be stored?")
+        else:
+            pprint(f"That directory does {Red}NOT{Reset} exist!!")
+        return True
+    if state == 5:
+        if os.path.isdir(cmd):
+            state = 0
+            print(f"Starting labeling program...")
+            label(gdir, cmd)
+        else:
+            pprint(f"That directory does {Red}NOT{Reset} exist!!")
+        return True
     print(f"OHHHH NO 😢! That's an {Red}invalid{Reset} input 😱!")
     return True
 

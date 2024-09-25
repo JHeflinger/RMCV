@@ -99,6 +99,7 @@ def label(srcdir, datadir):
             image_names.append(filename)
     if not images:
         print("No images found to label in source directory...")
+        pygame.quit()
         return
     current_image_index = 0
     selected_boxes = []

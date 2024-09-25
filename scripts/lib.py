@@ -239,3 +239,31 @@ def trainmodel(name, datayaml, mpset, nepochs, nbatch):
     shutil.copy(os.path.join(os.path.join(result.save_dir, "weights"), "best.pt"), f"models/{name}.pt")
     print(f"Finished training process in {Green}{timer.end()}{Reset} seconds")
     print(f"Final model saved under \"{Green}models/{name}.pt{Reset}\"")
+
+def modeldemo(assetpath, modelpath):
+    print("Initializing ultralytics...")
+    timer = Timer()
+    import cv2
+    from ultralytics import YOLO
+    print(f"Finished in {Green}{timer.end()}{Reset} seconds")
+    print(f"Starting video processing...")
+    timer.end()
+    model = YOLO(modelpath, verbose=False)
+    tot = 0
+    cap = cv2.VideoCapture(assetpath)
+    if cap.isOpened():
+        tot += int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    cap.release()
+    progress = tqdm(total = tot)
+    cap = cv2.VideoCapture(assetpath)
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        results = model(frame, verbose=False)
+        progress.update(1)
+    cap.release()
+    progress.close()
+    print(f"Finished video processing in {Green}{timer.end()}{Reset} seconds")
+
+

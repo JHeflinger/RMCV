@@ -1,5 +1,5 @@
 import os
-from lib import benchmark, label, trainmodel, Black, Red, Green, Yellow, Blue, Magenta, Cyan, White, Reset
+from lib import benchmark, label, trainmodel, modeldemo, Black, Red, Green, Yellow, Blue, Magenta, Cyan, White, Reset
 
 prettylogger = True
 state = 0
@@ -7,6 +7,7 @@ gdir = ""
 pset = 0
 epochs = 0
 batch = 0
+modelstr = ""
 
 def pprint(mystr):
     global prettylogger
@@ -19,6 +20,7 @@ def run_command(cmd):
     global pset
     global epochs
     global batch
+    global modelstr
     if cmd == "quit":
         return False
     if cmd == "help":
@@ -42,9 +44,14 @@ def run_command(cmd):
             state = 1
             return True
         if cmd == "demo":
-            print("not implemented yet buster...")
-            exit()
-            state = 2
+            pprint(f"ITS {Red}D{Yellow}E{Green}M{Cyan}O{Reset} TIME!!!")
+            pprint(f"Wich 🥸{Cyan}SMART{Reset}🥸 model would you like to use? (Enter the # of the selection you want)")
+            ind = 1 
+            for entry in os.listdir("models"):
+                if os.path.isfile(os.path.join("models", entry)):
+                    pprint(f"{ind}. {entry}")
+                ind += 1
+            state = 11
             return True
         if cmd == "label":
             pprint(f"WHOS READY FOR SOME (boring) {Yellow}💪💪LABELING???💪💪{Reset}")
@@ -154,6 +161,38 @@ def run_command(cmd):
         else:
             pprint(f"That was {Red}NOT{Reset} a valid option!")
         return True
+    if state == 11:
+        ind = 1
+        modelstr = ""
+        for entry in os.listdir("models"):
+            if os.path.isfile(os.path.join("models", entry)):
+                if cmd == str(ind):
+                    modelstr = entry
+                    break
+            ind += 1
+        ind = 1
+        if modelstr != "":
+            pprint(f"{Red}A{Yellow}W{Green}E{Cyan}S{Blue}O{Magenta}M{Red}E{Reset}!! What video do you want to demo?")
+            for entry in os.listdir("assets"):
+                if os.path.isfile(os.path.join("assets", entry)):
+                    pprint(f"{ind}. {entry}")
+                ind += 1
+            state = 12
+            return True
+    if state == 12:
+        ind = 1 
+        assetstr = ""
+        for entry in os.listdir("assets"):
+            if os.path.isfile(os.path.join("assets", entry)):
+                if cmd == str(ind):
+                    assetstr = entry
+                    break
+            ind += 1 
+        if assetstr != "":
+            print("Starting demo...")
+            modeldemo(os.path.join("assets", assetstr), os.path.join("models", modelstr))
+            state = 0
+            return True
     print(f"OHHHH NO 😢! That's an {Red}invalid{Reset} input 😱!")
     return True
 

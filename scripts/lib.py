@@ -259,15 +259,34 @@ def modeldemo(assetpath, modelpath):
     cap.release()
     progress = tqdm(total = tot)
     cap = cv2.VideoCapture(assetpath)
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    output_path = 'cache.mp4'
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
     history = []
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
         history.append(applymodel(model, frame, history))
+        out.write(history[-1][0].plot())
         progress.update(1)
     cap.release()
+    out.release()
     progress.close()
     print(f"Finished video processing in {Green}{timer.end()}{Reset} seconds")
+    cap = cv2.VideoCapture(output_path)
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            continue
+        cv2.imshow('Demo Video', frame)
+        if cv2.waitKey(25) & 0xFF == ord('q') or not cv2.getWindowProperty('Demo Video', cv2.WND_PROP_VISIBLE):
+            break
+    cap.release()
+    cv2.destroyAllWindows()
 
 

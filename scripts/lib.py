@@ -240,6 +240,9 @@ def trainmodel(name, datayaml, mpset, nepochs, nbatch):
     print(f"Finished training process in {Green}{timer.end()}{Reset} seconds")
     print(f"Final model saved under \"{Green}models/{name}.pt{Reset}\"")
 
+def applymodel(model, frame, history):
+    return model(frame, verbose=False)
+
 def modeldemo(assetpath, modelpath):
     print("Initializing ultralytics...")
     timer = Timer()
@@ -256,11 +259,12 @@ def modeldemo(assetpath, modelpath):
     cap.release()
     progress = tqdm(total = tot)
     cap = cv2.VideoCapture(assetpath)
+    history = []
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-        results = model(frame, verbose=False)
+        history.append(applymodel(model, frame, history))
         progress.update(1)
     cap.release()
     progress.close()

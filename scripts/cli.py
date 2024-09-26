@@ -117,7 +117,7 @@ def run_command(cmd):
             pprint(f"This is {Red}NOT{Reset} a directory with valid training data!!")
         return True
     if state == 7:
-        if cmd.isdigit() and int(cmd) > 0 and int(cmd) < 6:
+        if cmd.isdigit() and int(cmd) > 0 and int(cmd) < 7:
             pset = int(cmd)
             pprint(f"How many {Green}quivering{Reset} epochs will you train on?!")
             state = 8

@@ -82,10 +82,12 @@ def benchmark(models):
 
 def label(srcdir, datadir):
     print("Initializing pygame...")
+    gwidth = 1600
+    gheight = 1200
     timer = Timer()
     import pygame
     pygame.init()
-    screen = pygame.display.set_mode((800, 600))
+    screen = pygame.display.set_mode((gwidth, gheight))
     pygame.display.set_caption("LMB: Red | RMB: Blue | ENTR: Submit | C: Clear | ESC: Reject")
     print(f"Finished in {Green}{timer.end()}{Reset} seconds")
     class_labels = {'Red': 0, 'Blue': 1}
@@ -111,29 +113,34 @@ def label(srcdir, datadir):
         with open(os.path.join(datadir, "dataset.yaml"), 'w') as file:
             imgpath = os.path.abspath(os.path.join(os.path.join(datadir, "images"), "train"))
             valpath = os.path.abspath(os.path.join(os.path.join(datadir, "images"), "val"))
+            tpath = os.path.abspath(os.path.join(os.path.join(datadir, "images"), "test"))
             file.write(
                 f"train: {imgpath}\n" + 
                 f"val: {valpath}\n" + 
+                f"test: {tpath}\n" + 
                 "\n" + 
                 "nc: 2\n" + 
                 "names: ['Red', 'Blue']"
             )
 
+    progress = tqdm(total = len(images))
     while True:        
         if os.path.isfile(os.path.join(srcdir, ".jignore")):
             with open(os.path.join(srcdir, ".jignore"), 'r') as file:
                 for line in file.readlines():
                     if image_names[current_image_index] == line.strip():
                         current_image_index += 1
+                        progress.update(1)
                         continue
         
         if (current_image_index >= len(images)):
             print("No more images to label! Shutting down now!")
+            progress.close()
             pygame.quit()
             return
 
         img = pygame.image.load(images[current_image_index])
-        img_rect = img.get_rect(center=(400, 300))
+        img_rect = img.get_rect(center=(gwidth/2, gheight/2))
         screen.fill((255, 255, 255))
         screen.blit(img, img_rect)
 
@@ -150,6 +157,7 @@ def label(srcdir, datadir):
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                progress.close()
                 pygame.quit()
                 return
 
@@ -167,6 +175,7 @@ def label(srcdir, datadir):
                             file.write(image_names[current_image_index] + "\n")
                     selecting = False
                     current_image_index += 1
+                    progress.update(1)
 
                 if event.key == pygame.K_RETURN:
                     if not os.path.isfile(os.path.join(srcdir, ".jignore")):
@@ -179,21 +188,23 @@ def label(srcdir, datadir):
                     selecting = False
                     os.makedirs(os.path.join(datadir, "labels/train"), exist_ok=True)
                     os.makedirs(os.path.join(datadir, "labels/val"), exist_ok=True)
+                    os.makedirs(os.path.join(datadir, "labels/test"), exist_ok=True)
                     os.makedirs(os.path.join(datadir, "images/train"), exist_ok=True)
                     os.makedirs(os.path.join(datadir, "images/val"), exist_ok=True)
+                    os.makedirs(os.path.join(datadir, "images/test"), exist_ok=True)
                     split_count += 1
                     txtname = image_names[current_image_index][0:len(image_names[current_image_index]) - len(image_names[current_image_index].split(".")[-1])] + "txt"
-                    if split_count < 9:
+                    if split_count < 7:
                         with open(os.path.join(datadir, "labels/train/" + txtname), 'w') as f:
                             for box in selected_boxes:
-                                x_center = ((box['rect'].x + box['rect'].width / 2) - (400 - (img.get_width()/2))) / img.get_width()
-                                y_center = ((box['rect'].y + box['rect'].height / 2) - (300 - (img.get_height()/2))) / img.get_height()
+                                x_center = ((box['rect'].x + box['rect'].width / 2) - ((gwidth / 2) - (img.get_width()/2))) / img.get_width()
+                                y_center = ((box['rect'].y + box['rect'].height / 2) - ((gheight / 2) - (img.get_height()/2))) / img.get_height()
                                 width = box['rect'].width / img.get_width()
                                 height = box['rect'].height / img.get_height()
                                 label = box['label']
                                 f.write(f"{class_labels[label]} {x_center} {y_center} {width} {height}\n")
                         shutil.copy(images[current_image_index], os.path.join(datadir, "images/train/" + image_names[current_image_index]))
-                    else:
+                    elif split_count < 9:
                         with open(os.path.join(datadir, "labels/val/" + txtname), 'w') as f:
                             for box in selected_boxes:
                                 x_center = (box['rect'].x + box['rect'].width / 2) / img.get_width()
@@ -203,7 +214,18 @@ def label(srcdir, datadir):
                                 label = box['label']
                                 f.write(f"{class_labels[label]} {x_center} {y_center} {width} {height}\n")
                         shutil.copy(images[current_image_index], os.path.join(datadir, "images/val/" + image_names[current_image_index]))
+                    else:
+                        with open(os.path.join(datadir, "labels/test/" + txtname), 'w') as f:
+                            for box in selected_boxes:
+                                x_center = (box['rect'].x + box['rect'].width / 2) / img.get_width()
+                                y_center = (box['rect'].y + box['rect'].height / 2) / img.get_height()
+                                width = box['rect'].width / img.get_width()
+                                height = box['rect'].height / img.get_height()
+                                label = box['label']
+                                f.write(f"{class_labels[label]} {x_center} {y_center} {width} {height}\n")
+                        shutil.copy(images[current_image_index], os.path.join(datadir, "images/test/" + image_names[current_image_index]))
                     current_image_index += 1
+                    progress.update(1)
                     selected_boxes.clear()
                     if split_count >= 10:
                         split_count = 0

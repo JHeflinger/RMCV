@@ -45,7 +45,7 @@ def run_command(cmd):
             return True
         if cmd == "demo":
             pprint(f"ITS {Red}D{Yellow}E{Green}M{Cyan}O{Reset} TIME!!!")
-            pprint(f"Wich 🥸{Cyan}SMART{Reset}🥸 model would you like to use? (Enter the # of the selection you want)")
+            pprint(f"Which 🥸{Cyan}SMART{Reset}🥸 model would you like to use? (Enter the # of the selection you want)")
             ind = 1 
             for entry in os.listdir("models"):
                 if os.path.isfile(os.path.join("models", entry)):

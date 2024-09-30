@@ -1,9 +1,10 @@
 import os
-from lib import benchmark, label, trainmodel, modeldemo, Black, Red, Green, Yellow, Blue, Magenta, Cyan, White, Reset
+from lib import benchmark, label, trainmodel, modeldemo, splitdir, peelvid, Black, Red, Green, Yellow, Blue, Magenta, Cyan, White, Reset
 
 prettylogger = True
 state = 0
 gdir = ""
+gdir2 = ""
 pset = 0
 epochs = 0
 batch = 0
@@ -17,6 +18,7 @@ def pprint(mystr):
 def run_command(cmd):
     global state
     global gdir
+    global gdir2
     global pset
     global epochs
     global batch
@@ -30,6 +32,8 @@ def run_command(cmd):
         print(f"\tdemo       | Shows off our {Yellow}AWESOME{Reset} performance! 💪🥸")
         print(f"\tlabel      | Labels your {Magenta}🪨ROCKIN'🪨{Reset} data!")
         print(f"\ttrain      | Trains a new {Yellow}⭐STELLAR⭐{Reset} model")
+        print(f"\tsplit      | Splits up a {Green}BOUNTIFUL{Reset} directory of data into multiple others")
+        print(f"\tpeel       | Peels image data from a {Yellow}💵VALUABLE💵{Reset} video")
         return True
     if state == 0:
         if cmd == "benchmark":
@@ -62,6 +66,14 @@ def run_command(cmd):
             pprint(f"WHOS READY FOR SOME (friggin' awesome) {Yellow}💪💪TRAINING???💪💪{Reset}")
             pprint(f"What {Red}R{Yellow}A{Green}D{Cyan}I{Blue}C{Magenta}A{Red}L{Reset} directory is your dataset in?")
             state = 6
+            return True
+        if cmd == "split":
+            pprint(f"What directory do you wanna {Yellow}SPLIT⚡UP{Reset}?")
+            state = 13
+            return True
+        if cmd == "peel":
+            pprint(f"What {Cyan}CINEMATIC{Reset} video would you like to peel from?")
+            state = 16
             return True
     if state == 1:
         ind = 2
@@ -191,6 +203,48 @@ def run_command(cmd):
         if assetstr != "":
             print("Starting demo...")
             modeldemo(os.path.join("assets", assetstr), os.path.join("models", modelstr))
+            state = 0
+            return True
+    if state == 13:
+        if os.path.isdir(cmd):
+            gdir = cmd
+            pprint(f"Where do you wanna save the distributed data?!")
+            state = 14
+        else:
+            pprint("DIRECTORY DOES NOT EXIST!!! 😱😱😱")
+        return True
+    if state == 14:
+        if os.path.isdir(cmd):
+            gdir2 = cmd
+            pprint(f"How many ways do you want to {Yellow}SPLIT⚡UP{Reset} the data?!")
+            state = 15
+        else:
+            pprint("DIRECTORY DOES NOT EXIST!!! 😱😱😱")
+        return True
+    if state == 15:
+        if cmd.isdigit() and int(cmd) > 0:
+            splitdir(gdir, gdir2, int(cmd))
+            state = 0
+            return True
+    if state == 16:
+        if os.path.isfile(cmd) and cmd.split(".")[-1] == "mp4":
+            gdir = cmd
+            state = 17
+            pprint("Where do you want to store your 🍊peeled images?")
+        else:
+            pprint("NOPE!!! NOT A REAL OR VALID .mp4 VIDEO FILE!! 😱😱😱")
+        return True
+    if state == 17:
+        if os.path.isdir(cmd):
+            gdir2 = cmd
+            state = 18
+            pprint("How many images do you want to peel🍊?")
+        else:
+            pprint("NOPE!! NOT A REAL DIRECTORY!! 😱😱😱")
+        return True
+    if state == 18:
+        if cmd.isdigit() and int(cmd) > 0:
+            peelvid(gdir, gdir2, int(cmd))
             state = 0
             return True
     print(f"OHHHH NO 😢! That's an {Red}invalid{Reset} input 😱!")

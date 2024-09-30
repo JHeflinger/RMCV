@@ -1,6 +1,7 @@
 import time
 import os
 from tqdm import tqdm
+import cv2
 import shutil
 
 Black = "\033[30m"
@@ -26,7 +27,6 @@ class Timer:
 def benchmark(models):
     print("Initializing ultralytics...")
     timer = Timer()
-    import cv2
     from ultralytics import YOLO
     print(f"Finished in {Green}{timer.end()}{Reset} seconds")
     resultframe = []
@@ -268,7 +268,6 @@ def applymodel(model, frame, history):
 def modeldemo(assetpath, modelpath):
     print("Initializing ultralytics...")
     timer = Timer()
-    import cv2
     from ultralytics import YOLO
     print(f"Finished in {Green}{timer.end()}{Reset} seconds")
     print(f"Starting video processing...")
@@ -311,4 +310,52 @@ def modeldemo(assetpath, modelpath):
     cap.release()
     cv2.destroyAllWindows()
 
-
+def splitdir(dir, savedir, numways):
+    for i in range(numways):
+        os.makedirs(os.path.join(savedir, f"shard_{i}"), exist_ok=True)
+    file_count = 0
+    for root, dirs, files in os.walk(dir):
+        file_count += len(files)
+    print("Distributing files...")
+    progress = tqdm(total = file_count)
+    distcount = 0
+    timer = Timer()
+    for root, dirs, files in os.walk(dir):
+        for file in files:
+            file_path = os.path.join(root, file)
+            shutil.copy(file_path, os.path.join(savedir, f"shard_{distcount}/{file}"))
+            distcount += 1
+            if distcount >= numways:
+                distcount = 0
+            progress.update(1)
+    progress.close()
+    print(f"Finished distributing files in {Green}{timer.end()}{Reset} seconds!")
+    
+def peelvid(vidpath, storepath, numimages):
+    tot = 0
+    cap = cv2.VideoCapture(vidpath)
+    if cap.isOpened():
+        tot += int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    if numimages > tot:
+        print("Not enough frames to peel from! Please try and peel less or choose a longer video.")
+        cap.release()
+        return
+    print("Peeling frames...")
+    timer = Timer()
+    progress = tqdm(total = numimages)
+    interval = int(tot/numimages)
+    curr_frame = 0
+    for i in range(numimages):
+        cap.set(cv2.CAP_PROP_POS_FRAMES, curr_frame)
+        ret, frame = cap.read()
+        if not ret:
+            cap.release()
+            progress.close()
+            print("Error occured while reading frame...")
+            return
+        cv2.imwrite(f"{storepath}/frame_{curr_frame}.png", frame)
+        curr_frame += interval
+        progress.update(1)
+    cap.release()
+    progress.close()
+    print(f"Finished peeling frames in {Green}{timer.end()}{Reset} seconds!")
